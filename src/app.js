@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const corsOptions = require('./cors-whitelist');
 const helmet = require('helmet');
 const { NODE_ENV } = require('./config')
 
@@ -11,19 +12,10 @@ const morganOption = (NODE_ENV === 'production')
   ? 'tiny'
   : 'common';
 
-const whitelist = ['http://localhost:3000', 'http://my-project.com'];
-const options = {
-  origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
-};
 
-app.use(cors(options));
 app.use(morgan(morganOption));
+app.use(cors({origin: corsOptions}));
+app.use(express.json());
 app.use(helmet());
 
 
@@ -39,8 +31,12 @@ app.use(function errorHandler(error, req, res, next) {
         console.error(error)
         response = { message: error.message, error }
     }
-    res.status(403).end();
-    res.status(500).json(response);
+
+    if(error.type === 'CORS') {
+      res.status(403).end()
+    }
+    res.status(500).json(response)
+    
 });
 
 module.exports = app;
