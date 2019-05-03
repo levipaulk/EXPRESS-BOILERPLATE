@@ -5,6 +5,7 @@ const cors = require('cors');
 const corsOptions = require('./cors-whitelist');
 const helmet = require('helmet');
 const { NODE_ENV } = require('./config')
+const winston = require('winston');
 
 const app = express();
 
@@ -18,6 +19,19 @@ app.use(cors({origin: corsOptions}));
 app.use(express.json());
 app.use(helmet());
 
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'info.log' })
+  ]
+});
+
+if(NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.simple()
+  }));
+};
 
 app.get('/', (req, res) => {
     res.send('Hello, boilerplate!')
